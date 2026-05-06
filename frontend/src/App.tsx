@@ -1,122 +1,31 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import CreateFarm from './components/CreateFarm';
+import FarmMain from './components/FarmMain';
+import { useGameStore } from './store/useGameStore';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const isFarmCreated = useGameStore((state) => state.isFarmCreated);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="min-h-screen flex items-center justify-center p-4">
+      {/* 플래시 플레이어 창 느낌의 컨테이너 */}
+      <div className="w-full max-w-4xl aspect-4/3 sm:aspect-video bg-white rounded-xl overflow-hidden relative shadow-[0_0_40px_rgba(0,0,0,0.5)] border-12 border-gray-300">
+        {/* 상단 가짜 타이틀 바 */}
+        <div className="absolute top-0 w-full h-8 bg-blue-600 flex items-center px-3 z-50 border-b-2 border-blue-800">
+          <div className="flex gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-400 border border-red-600"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div>
+            <div className="w-3 h-3 rounded-full bg-green-400 border border-green-600"></div>
+          </div>
+          <span className="text-white text-xs ml-4 tracking-widest font-bold">ANIMAL FARM.swf</span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        {/* 실제 화면 렌더링 영역 (타이틀 바 높이만큼 패딩) */}
+        <div className="w-full h-full pt-8 relative bg-sky-50">
+          {isFarmCreated ? <FarmMain /> : <CreateFarm />}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
