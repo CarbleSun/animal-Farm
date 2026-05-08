@@ -1,9 +1,9 @@
 import CreateFarm from './components/CreateFarm';
 import FarmMain from './components/FarmMain';
-import { useGameStore } from './store/useGameStore';
+import { useUserStore } from './store/useUserStore';
 
 function App() {
-  const isFarmCreated = useGameStore((state) => state.isFarmCreated);
+  const isFarmCreated = useUserStore((state) => state.isFarmCreated);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

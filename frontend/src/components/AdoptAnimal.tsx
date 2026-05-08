@@ -1,6 +1,6 @@
 // src/components/AdoptAnimal.tsx
 import { useState } from 'react';
-import { useGameStore, type Species } from '../store/useGameStore';
+import { useAnimalStore, type Species } from '../store/useAnimalStore';
 
 const ANIMAL_OPTIONS: { species: Species; emoji: string; desc: string }[] = [
   { species: 'Dog', emoji: '🐶', desc: '활발한 멍멍이' },
@@ -9,7 +9,7 @@ const ANIMAL_OPTIONS: { species: Species; emoji: string; desc: string }[] = [
 ];
 
 const AdoptAnimal = () => {
-  const adoptAnimal = useGameStore((state) => state.adoptAnimal);
+  const adoptAnimal = useAnimalStore((state) => state.adoptAnimal);
   const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
   const [animalName, setAnimalName] = useState('');
 
@@ -21,7 +21,7 @@ const AdoptAnimal = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-orange-200 to-orange-400 p-8 relative">
+    <div className="flex flex-col items-center justify-center h-full bg-linear-to-br from-orange-200 to-orange-400 p-8 relative">
       <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl border-[6px] border-orange-800 shadow-[10px_10px_0_rgba(0,0,0,0.2)] w-full max-w-2xl text-center z-10">
         <h2 className="text-3xl md:text-4xl font-extrabold text-orange-900 mb-2">
           🎁 첫 동물을 선택하세요!
@@ -61,7 +61,7 @@ const AdoptAnimal = () => {
               />
               <button
                 type="submit"
-                className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-white font-extrabold py-4 rounded-xl text-2xl shadow-[0_6px_0_#166534] hover:translate-y-[2px] active:shadow-none active:translate-y-[6px] transition-all border-4 border-green-900"
+                className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-white font-extrabold py-4 rounded-xl text-2xl shadow-[0_6px_0_#166534] hover:translate-y-0.5 active:shadow-none active:translate-y-1.5 transition-all border-4 border-green-900"
               >
                 입양 완료!
               </button>

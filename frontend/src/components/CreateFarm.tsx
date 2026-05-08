@@ -1,11 +1,11 @@
 // src/components/CreateFarm.tsx
 import { useState } from 'react';
-import { useGameStore } from '../store/useGameStore';
+import { useUserStore } from '../store/useUserStore';
 
 const CreateFarm = () => {
   const [fName, setFName] = useState('');
   const [uName, setUName] = useState('');
-  const createFarm = useGameStore((state) => state.createFarm);
+  const createFarm = useUserStore((state) => state.createFarm);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,7 +15,7 @@ const CreateFarm = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-green-300 to-green-500 p-8 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-full bg-linear-to-br from-green-300 to-green-500 p-8 relative overflow-hidden">
       {/* 장식용 구름과 꽃 */}
       <div className="absolute top-10 left-10 text-6xl opacity-70">☁️</div>
       <div className="absolute top-24 right-16 text-5xl opacity-60">☁️</div>
@@ -30,7 +30,7 @@ const CreateFarm = () => {
       </div>
       
       {/* 입력 폼 영역 */}
-      <form onSubmit={handleSubmit} className="z-10 bg-orange-50 p-8 rounded-[2rem] border-[6px] border-orange-800 w-full max-w-md shadow-[8px_8px_0_rgba(0,0,0,0.3)]">
+      <form onSubmit={handleSubmit} className="z-10 bg-orange-50 p-8 rounded-4xl border-[6px] border-orange-800 w-full max-w-md shadow-[8px_8px_0_rgba(0,0,0,0.3)]">
         <div className="space-y-6">
           <div>
             <label className="block text-xl font-bold text-orange-900 mb-2 drop-shadow-sm">농장 이름</label>
@@ -56,7 +56,7 @@ const CreateFarm = () => {
 
           <button 
             type="submit"
-            className="w-full mt-4 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-extrabold py-4 rounded-xl text-2xl shadow-[0_8px_0_#a16207] hover:translate-y-[2px] hover:shadow-[0_6px_0_#a16207] active:shadow-none active:translate-y-[8px] transition-all border-4 border-yellow-800"
+            className="w-full mt-4 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-extrabold py-4 rounded-xl text-2xl shadow-[0_8px_0_#a16207] hover:translate-y-0.5 hover:shadow-[0_6px_0_#a16207] active:shadow-none active:translate-y-2 transition-all border-4 border-yellow-800"
           >
             게임 시작하기!
           </button>
