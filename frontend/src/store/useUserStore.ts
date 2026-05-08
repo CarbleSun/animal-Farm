@@ -8,6 +8,7 @@ interface UserState {
   points: number;
   createFarm: (farmName: string, userName: string) => void;
   spendPoints: (amount: number) => boolean; // 구매 시 포인트 차감
+	earnPoints: (amount: number) => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -25,6 +26,7 @@ export const useUserStore = create<UserState>()(
         }
         return false; // 포인트 부족
       },
+			earnPoints: (amount) => set({ points: get().points + amount }),
     }),
     { name: 'user-storage' }
   )

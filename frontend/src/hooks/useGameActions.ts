@@ -5,30 +5,40 @@ import { useAnimalStore } from '../store/useAnimalStore';
 export const useGameActions = () => {
   const spendPoints = useUserStore((state) => state.spendPoints);
   const { addItem, useItem } = useInventoryStore();
-  const updateStats = useAnimalStore((state) => state.updateStats);
+  const { updateStats, addExp, myAnimal, cureDisease } = useAnimalStore();
 
-  // 상점 구매 로직
-  const buyItem = (type: 'food' | 'toy', price: number, amount: number) => {
+  const buyItem = (type: 'food' | 'toy' | 'medicine', price: number, amount: number) => {
     if (spendPoints(price)) {
       addItem(type, amount);
-      return true; // 구매 성공
+      return true;
     }
-    return false; // 돈 부족
+    return false;
   };
 
-  // 밥 주기 로직
   const feedAnimal = () => {
     if (useItem('food')) {
-      updateStats(30, 0); // 밥 소모 성공 시 포만감 +30
+      updateStats(30, 0); 
+      addExp(20); 
     }
   };
 
-  // 놀아주기 로직
   const playWithAnimal = () => {
+    // 아플 때는 놀아줄 수 없음 (예외 처리)
+    if (myAnimal?.isSick) return; 
+    
     if (useItem('toy')) {
-      updateStats(-5, 30); // 장난감 소모 성공 시 포만감 -5, 행복도 +30
+      updateStats(-5, 30);
+      addExp(30); 
     }
   };
 
-  return { buyItem, feedAnimal, playWithAnimal };
+  // 👇 치료 로직 추가
+  const cureAnimal = () => {
+    if (!myAnimal?.isSick) return; // 아프지 않으면 무시
+    if (useItem('medicine')) {
+      cureDisease(); // 약 소모 시 병 완치
+    }
+  };
+
+  return { buyItem, feedAnimal, playWithAnimal, cureAnimal };
 };

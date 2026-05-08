@@ -4,8 +4,9 @@ import { persist } from 'zustand/middleware';
 interface InventoryState {
   food: number;
   toy: number;
-  addItem: (type: 'food' | 'toy', amount: number) => void;
-  useItem: (type: 'food' | 'toy') => boolean;
+	medicine: number;
+  addItem: (type: 'food' | 'toy' | 'medicine', amount: number) => void;
+  useItem: (type: 'food' | 'toy' | 'medicine') => boolean;
 }
 
 export const useInventoryStore = create<InventoryState>()(
@@ -13,6 +14,7 @@ export const useInventoryStore = create<InventoryState>()(
     (set, get) => ({
       food: 5,
       toy: 3,
+			medicine: 1,
       addItem: (type, amount) => set({ [type]: get()[type] + amount }),
       useItem: (type) => {
         if (get()[type] > 0) {
