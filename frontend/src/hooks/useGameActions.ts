@@ -2,42 +2,55 @@ import { useUserStore } from '../store/useUserStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useAnimalStore } from '../store/useAnimalStore';
 
+export interface ActionFeedback {
+  type: 'feed' | 'play' | 'cure';
+  stats: { hunger?: number; happiness?: number; exp: number; };
+}
+
 export const useGameActions = () => {
   const spendPoints = useUserStore((state) => state.spendPoints);
-  const { addItem, useItem } = useInventoryStore();
-  const { updateStats, addExp, myAnimal, cureDisease } = useAnimalStore();
+  const inventory = useInventoryStore(); 
+  const { updateStats, addExp, animals, activeAnimalId, cureDisease } = useAnimalStore();
+
+  const activeAnimal = animals.find((a) => a.id === activeAnimalId);
 
   const buyItem = (type: 'food' | 'toy' | 'medicine', price: number, amount: number) => {
     if (spendPoints(price)) {
-      addItem(type, amount);
+      inventory.addItem(type, amount);
       return true;
     }
     return false;
   };
 
-  const feedAnimal = () => {
-    if (useItem('food')) {
-      updateStats(30, 0); 
-      addExp(20); 
+  const feedAnimal = (): ActionFeedback | null => {
+    if (!activeAnimal || inventory.food <= 0) return null;
+    if (inventory.useItem('food')) {
+      const stats = { hunger: 30, happiness: 0, exp: 20 };
+      updateStats(stats.hunger, stats.happiness); 
+      addExp(stats.exp);
+      return { type: 'feed', stats };
     }
+    return null;
   };
 
-  const playWithAnimal = () => {
-    // 아플 때는 놀아줄 수 없음 (예외 처리)
-    if (myAnimal?.isSick) return; 
-    
-    if (useItem('toy')) {
-      updateStats(-5, 30);
-      addExp(30); 
+  const playWithAnimal = (): ActionFeedback | null => {
+    if (!activeAnimal || inventory.toy <= 0 || activeAnimal.isSick) return null; 
+    if (inventory.useItem('toy')) {
+      const stats = { hunger: -5, happiness: 30, exp: 30 };
+      updateStats(stats.hunger, stats.happiness);
+      addExp(stats.exp);
+      return { type: 'play', stats };
     }
+    return null;
   };
 
-  // 👇 치료 로직 추가
-  const cureAnimal = () => {
-    if (!myAnimal?.isSick) return; // 아프지 않으면 무시
-    if (useItem('medicine')) {
-      cureDisease(); // 약 소모 시 병 완치
+  const cureAnimal = (): ActionFeedback | null => {
+    if (!activeAnimal?.isSick || inventory.medicine <= 0) return null;
+    if (inventory.useItem('medicine')) {
+      cureDisease();
+      return { type: 'cure', stats: { exp: 50 } };
     }
+    return null;
   };
 
   return { buyItem, feedAnimal, playWithAnimal, cureAnimal };

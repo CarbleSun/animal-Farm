@@ -12,111 +12,123 @@ export interface Animal {
   level: number;
   exp: number;
   lastUpdated: number;
-  isSick: boolean; // 👈 질병 상태 추가
+  isSick: boolean;
 }
 
 interface AnimalState {
-  myAnimal: Animal | null;
+  animals: Animal[];
+  activeAnimalId: string | null;
+  setActiveAnimal: (id: string) => void;
   adoptAnimal: (name: string, species: Species) => void;
   updateStats: (hungerDelta: number, happinessDelta: number) => void;
   decreaseStats: () => void;
   addExp: (amount: number) => void;
   decayOfflineStats: () => void;
-  cureDisease: () => void; // 👈 치료 함수 추가
+  cureDisease: () => void;
 }
 
 export const useAnimalStore = create<AnimalState>()(
   persist(
-    (set, get) => ({
-      myAnimal: null,
-      adoptAnimal: (name, species) => 
-        set({
-          myAnimal: {
-            id: Date.now().toString(), name, species,
-            hunger: 100, happiness: 100,
-            level: 1, exp: 0,
+    (set) => ({
+      animals: [],
+      activeAnimalId: null,
+      
+      setActiveAnimal: (id) => set({ activeAnimalId: id }),
+      
+      adoptAnimal: (name, species) => set((state) => {
+        const newAnimal: Animal = {
+          id: Date.now().toString(),
+          name, species,
+          hunger: 100, happiness: 100,
+          level: 1, exp: 0,
+          lastUpdated: Date.now(),
+          isSick: false,
+        };
+        return {
+          animals: [...state.animals, newAnimal],
+          activeAnimalId: newAnimal.id, // 입양 시 해당 동물을 바로 활성화
+        };
+      }),
+
+      // 현재 활성화된 동물에게만 적용
+      updateStats: (hungerDelta, happinessDelta) => set((state) => ({
+        animals: state.animals.map((animal) => {
+          if (animal.id !== state.activeAnimalId) return animal;
+          const newHunger = Math.max(0, Math.min(100, animal.hunger + hungerDelta));
+          const newHappiness = Math.max(0, Math.min(100, animal.happiness + happinessDelta));
+          return {
+            ...animal,
+            hunger: newHunger,
+            happiness: newHappiness,
+            isSick: animal.isSick || newHunger <= 20 || newHappiness <= 20,
             lastUpdated: Date.now(),
-            isSick: false,
-          }
-        }),
-      updateStats: (hungerDelta, happinessDelta) => set((state) => {
-        if (!state.myAnimal) return state;
-        const newHunger = Math.max(0, Math.min(100, state.myAnimal.hunger + hungerDelta));
-        const newHappiness = Math.max(0, Math.min(100, state.myAnimal.happiness + happinessDelta));
-        
-        return {
-          myAnimal: {
-            ...state.myAnimal,
-            hunger: newHunger,
-            happiness: newHappiness,
-            // 수치가 20 이하로 떨어지면 병에 걸림
-            isSick: state.myAnimal.isSick || newHunger <= 20 || newHappiness <= 20,
-            lastUpdated: Date.now(), 
-          }
-        };
-      }),
-      decreaseStats: () => set((state) => {
-        if (!state.myAnimal) return state;
-        // 병에 걸리면 감소량 2배 페널티
-        const hungerDrop = state.myAnimal.isSick ? 4 : 2;
-        const happinessDrop = state.myAnimal.isSick ? 2 : 1;
-        
-        const newHunger = Math.max(0, state.myAnimal.hunger - hungerDrop);
-        const newHappiness = Math.max(0, state.myAnimal.happiness - happinessDrop);
+          };
+        })
+      })),
 
-        return {
-          myAnimal: {
-            ...state.myAnimal,
-            hunger: newHunger,
-            happiness: newHappiness,
-            isSick: state.myAnimal.isSick || newHunger <= 20 || newHappiness <= 20,
-            lastUpdated: Date.now(), 
-          }
-        };
-      }),
-      addExp: (amount) => set((state) => {
-        if (!state.myAnimal) return state;
-        let newExp = (state.myAnimal.exp || 0) + amount;
-        let newLevel = state.myAnimal.level || 1;
-        while (newExp >= newLevel * 100) {
-          newExp -= newLevel * 100;
-          newLevel += 1;
-        }
-        return {
-          myAnimal: {
-            ...state.myAnimal, level: newLevel, exp: newExp, lastUpdated: Date.now(),
-          }
-        };
-      }),
-      decayOfflineStats: () => {
-        const animal = get().myAnimal;
-        if (!animal) return;
-        const now = Date.now();
-        const minutesPassed = Math.floor((now - animal.lastUpdated) / 60000); 
-
-        if (minutesPassed > 0) {
-          // 오프라인 상태에서도 병에 걸려있었다면 2배 감소
-          const hungerDrop = animal.isSick ? minutesPassed * 4 : minutesPassed * 2;
-          const happinessDrop = animal.isSick ? minutesPassed * 2 : minutesPassed * 1;
-          
+      // 보유한 모든 동물에게 적용 (배고픔 감소)
+      decreaseStats: () => set((state) => ({
+        animals: state.animals.map((animal) => {
+          const hungerDrop = animal.isSick ? 4 : 2;
+          const happinessDrop = animal.isSick ? 2 : 1;
           const newHunger = Math.max(0, animal.hunger - hungerDrop);
           const newHappiness = Math.max(0, animal.happiness - happinessDrop);
+          return {
+            ...animal,
+            hunger: newHunger,
+            happiness: newHappiness,
+            isSick: animal.isSick || newHunger <= 20 || newHappiness <= 20,
+            lastUpdated: Date.now(),
+          };
+        })
+      })),
 
-          set((state) => ({
-            myAnimal: state.myAnimal ? {
-              ...state.myAnimal,
+      // 현재 활성화된 동물에게만 적용
+      addExp: (amount) => set((state) => ({
+        animals: state.animals.map((animal) => {
+          if (animal.id !== state.activeAnimalId) return animal;
+          let newExp = (animal.exp || 0) + amount;
+          let newLevel = animal.level || 1;
+          while (newExp >= newLevel * 100) {
+            newExp -= newLevel * 100;
+            newLevel += 1;
+          }
+          return { ...animal, level: newLevel, exp: newExp, lastUpdated: Date.now() };
+        })
+      })),
+
+      // 보유한 모든 동물에게 적용 (오프라인 수치 저하)
+      decayOfflineStats: () => set((state) => {
+        const now = Date.now();
+        return {
+          animals: state.animals.map((animal) => {
+            const minutesPassed = Math.floor((now - animal.lastUpdated) / 60000);
+            if (minutesPassed <= 0) return animal;
+
+            const hungerDrop = animal.isSick ? minutesPassed * 4 : minutesPassed * 2;
+            const happinessDrop = animal.isSick ? minutesPassed * 2 : minutesPassed * 1;
+            const newHunger = Math.max(0, animal.hunger - hungerDrop);
+            const newHappiness = Math.max(0, animal.happiness - happinessDrop);
+
+            return {
+              ...animal,
               hunger: newHunger,
               happiness: newHappiness,
               isSick: animal.isSick || newHunger <= 20 || newHappiness <= 20,
               lastUpdated: now,
-            } : null
-          }));
-        }
-      },
-      // 👇 치료 실행 시 질병 상태 해제
+            };
+          })
+        };
+      }),
+
+      // 현재 활성화된 동물 치료
       cureDisease: () => set((state) => ({
-        myAnimal: state.myAnimal ? { ...state.myAnimal, isSick: false, lastUpdated: Date.now() } : null
-      }))
+        animals: state.animals.map((animal) =>
+          animal.id === state.activeAnimalId
+            ? { ...animal, isSick: false, lastUpdated: Date.now() }
+            : animal
+        )
+      })),
     }),
     { name: 'animal-storage' }
   )

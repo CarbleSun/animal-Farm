@@ -8,25 +8,26 @@ interface UserState {
   points: number;
   createFarm: (farmName: string, userName: string) => void;
   spendPoints: (amount: number) => boolean; // 구매 시 포인트 차감
-	earnPoints: (amount: number) => void;
+	addPoints: (amount: number) => void;
 }
 
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
-      isFarmCreated: false,
       farmName: '',
       userName: '',
       points: 1000,
+			isFarmCreated: false,
       createFarm: (farmName, userName) => set({ farmName, userName, isFarmCreated: true }),
       spendPoints: (amount) => {
-        if (get().points >= amount) {
-          set({ points: get().points - amount });
+				const currentPoints = get().points;
+        if (currentPoints >= amount) {
+          set({ points: currentPoints - amount });
           return true; // 차감 성공
         }
         return false; // 포인트 부족
       },
-			earnPoints: (amount) => set({ points: get().points + amount }),
+			addPoints: (amount) => set((state) => ({ points: state.points + amount })),
     }),
     { name: 'user-storage' }
   )

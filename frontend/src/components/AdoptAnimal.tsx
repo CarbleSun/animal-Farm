@@ -1,75 +1,75 @@
 import { useState } from 'react';
 import { useAnimalStore, type Species } from '../store/useAnimalStore';
 
-const ANIMAL_OPTIONS: { species: Species; emoji: string; desc: string }[] = [
-  { species: 'Dog', emoji: '🐶', desc: '활발한 멍멍이' },
-  { species: 'Cat', emoji: '🐱', desc: '도도한 야옹이' },
-  { species: 'Chick', emoji: '🐥', desc: '귀여운 삐약이' },
-];
+// 👇 Props 인터페이스 정의: onFinish를 선택적(optional)으로 추가
+interface AdoptAnimalProps {
+  onFinish?: () => void;
+}
 
-const AdoptAnimal = () => {
+const AdoptAnimal = ({ onFinish }: AdoptAnimalProps) => {
+  const [name, setName] = useState('');
+  const [species, setSpecies] = useState<Species>('Dog');
   const adoptAnimal = useAnimalStore((state) => state.adoptAnimal);
-  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
-  const [animalName, setAnimalName] = useState('');
 
-  const handleAdopt = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedSpecies && animalName.trim()) {
-      adoptAnimal(animalName, selectedSpecies);
+  const handleAdopt = () => {
+    if (!name.trim()) {
+      alert('동물의 이름을 지어주세요!');
+      return;
+    }
+    adoptAnimal(name, species);
+    
+    // 👇 입양이 완료되면 부모 컴포넌트(FarmMain)에게 알림
+    if (onFinish) {
+      onFinish();
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-orange-200 to-orange-400 p-4 md:p-8 relative">
-      <div className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-3xl border-[6px] border-orange-800 shadow-[10px_10px_0_rgba(0,0,0,0.2)] w-full max-w-2xl text-center z-10 flex flex-col items-center">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-sky-300 p-6">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] border-8 border-sky-800 shadow-[12px_12px_0_rgba(0,0,0,0.2)] p-8 flex flex-col items-center">
+        <h1 className="text-3xl font-black text-sky-900 mb-8 tracking-tighter">새로운 식구 입양하기</h1>
         
-        <h2 className="text-2xl md:text-4xl font-extrabold text-orange-900 mb-2">
-          🎁 첫 동물을 선택하세요!
-        </h2>
-        <p className="text-base md:text-lg font-bold text-orange-700 mb-6">어떤 친구와 함께 농장을 꾸려갈까요?</p>
+        {/* 이름 입력 */}
+        <div className="w-full mb-8">
+          <label className="block text-sm font-bold text-sky-700 mb-2 ml-2">이름 정하기</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="이름을 입력하세요"
+            className="w-full px-6 py-4 rounded-2xl border-4 border-sky-100 focus:border-sky-400 outline-none text-xl font-bold transition-all shadow-inner"
+          />
+        </div>
 
-        <form onSubmit={handleAdopt} className="w-full">
-          {/* 캐릭터 선택 카드들 */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
-            {ANIMAL_OPTIONS.map((animal) => (
-              <div
-                key={animal.species}
-                onClick={() => setSelectedSpecies(animal.species)}
-                className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-4 transition-all duration-200 ${
-                  selectedSpecies === animal.species
-                    ? 'border-orange-600 bg-orange-100 scale-105 shadow-[0_0_20px_rgba(234,88,12,0.5)]'
-                    : 'border-gray-300 bg-gray-100 hover:bg-orange-50 hover:border-orange-400'
+        {/* 종류 선택 */}
+        <div className="w-full mb-10">
+          <label className="block text-sm font-bold text-sky-700 mb-2 ml-2">종류 선택</label>
+          <div className="grid grid-cols-3 gap-3">
+            {(['Dog', 'Cat', 'Chick'] as Species[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSpecies(s)}
+                className={`flex flex-col items-center p-4 rounded-2xl border-4 transition-all ${
+                  species === s 
+                  ? 'bg-sky-100 border-sky-500 scale-105 shadow-md' 
+                  : 'bg-gray-50 border-gray-200 hover:border-sky-200'
                 }`}
               >
-                <span className="text-5xl md:text-7xl mb-2 drop-shadow-md">{animal.emoji}</span>
-                <span className="font-extrabold text-gray-800 text-lg">{animal.species}</span>
-                <span className="text-xs font-bold text-gray-500 mt-1">{animal.desc}</span>
-              </div>
+                <span className="text-4xl mb-2">
+                  {s === 'Dog' ? '🐶' : s === 'Cat' ? '🐱' : '🐥'}
+                </span>
+                <span className="font-bold text-gray-700">{s === 'Dog' ? '강아지' : s === 'Cat' ? '고양이' : '병아리'}</span>
+              </button>
             ))}
           </div>
+        </div>
 
-          {/* 이름 입력 영역 */}
-          <div className={`transition-all duration-300 overflow-hidden ${selectedSpecies ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}>
-            <div className="flex flex-col items-center bg-orange-50 p-5 rounded-2xl border-4 border-orange-200">
-              <label className="text-lg font-bold text-orange-900 mb-2">동물의 이름은?</label>
-              <input
-                type="text"
-                value={animalName}
-                onChange={(e) => setAnimalName(e.target.value)}
-                placeholder="이름을 지어주세요"
-                className="w-full max-w-sm px-4 py-2 text-center text-lg font-bold rounded-xl border-4 border-orange-300 focus:border-orange-600 outline-none mb-4 shadow-inner"
-              />
-              <button
-                type="submit"
-                disabled={!animalName.trim()}
-                className="w-full max-w-sm bg-green-500 hover:bg-green-400 text-white font-extrabold py-3 rounded-xl text-xl shadow-[0_6px_0_#166534] hover:translate-y-[2px] active:shadow-none active:translate-y-[6px] transition-all border-4 border-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                입양 완료!
-              </button>
-            </div>
-          </div>
-        </form>
-
+        <button
+          onClick={handleAdopt}
+          className="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 text-2xl font-black py-5 rounded-3xl border-b-8 border-yellow-600 active:border-b-0 active:translate-y-2 transition-all shadow-xl"
+        >
+          입양 완료!
+        </button>
       </div>
     </div>
   );

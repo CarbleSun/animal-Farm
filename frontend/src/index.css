@@ -20,3 +20,21 @@ body {
 * {
   user-select: none;
 }
+
+@keyframes fade-out-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px); /* 위로 50px 이동하며 사라짐 */
+  }
+}
+
+/* 플로팅 텍스트용 클래스 */
+.animate-floating-text {
+  animation: fade-out-up 1.5s ease-out forwards;
+  pointer-events: none; /* 텍스트가 클릭을 방해하지 않도록 설정 */
+  z-index: 100;
+}

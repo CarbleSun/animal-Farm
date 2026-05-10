@@ -1,131 +1,231 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../store/useUserStore';
+import { useAnimalStore } from '../store/useAnimalStore'; // 👈 동물 스토어 추가
 
 interface MiniGameModalProps {
   onClose: () => void;
 }
 
-interface Weed {
-  id: number;
-  x: number;
-  y: number;
-}
+type GameMode = 'select' | 'apple' | 'weed' | 'spy' | 'sort';
+type GameState = 'ready' | 'playing' | 'result';
+
+const SPY_PAIRS = [
+  ['🐑', '🐏'], ['🐥', '🐤'], ['🐶', '🐺'], ['🍀', '🌿'], ['🍎', '🍅'], ['🐮', '🐷']
+];
 
 const MiniGameModal = ({ onClose }: MiniGameModalProps) => {
-  const earnPoints = useUserStore((state) => state.earnPoints);
+  const addPoints = useUserStore((state) => state.addPoints);
+  const updateStats = useAnimalStore((state) => state.updateStats); // 👈 체력 감소용 함수
   
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(10); // 10초 제한 시간
+  const [mode, setMode] = useState<GameMode>('select');
+  const [gameState, setGameState] = useState<GameState>('ready');
   const [score, setScore] = useState(0);
-  const [weeds, setWeeds] = useState<Weed[]>([]);
+  const [timeLeft, setTimeLeft] = useState(0);
+  
+  const [activeWeed, setActiveWeed] = useState<number | null>(null);
+  const [spyData, setSpyData] = useState<{ grid: string[], answer: number }>({ grid: [], answer: 0 });
+  const [sortItem, setSortItem] = useState<'🦴' | '🐟'>('🦴');
 
-  // 게임 시작 함수
-  const startGame = () => {
-    setIsPlaying(true);
-    setTimeLeft(10);
-    setScore(0);
-    setWeeds([]);
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const timer: ReturnType<typeof setInterval> = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState]);
+
+  useEffect(() => {
+    if (gameState === 'playing' && timeLeft <= 0) {
+      setGameState('result');
+      
+      let rewardMultiplier = 10;
+      if (mode === 'weed') rewardMultiplier = 20;
+      if (mode === 'spy') rewardMultiplier = 30;
+      if (mode === 'sort') rewardMultiplier = 5;
+      
+      addPoints(score * rewardMultiplier);
+      
+      // 👇 알바 종료 시 체력 페널티 적용 (포만감 -10, 행복도 -10)
+      updateStats(-20, -20);
+    }
+  }, [timeLeft, gameState, score, mode, addPoints, updateStats]);
+
+  useEffect(() => {
+    let weedTimer: ReturnType<typeof setInterval>;
+    if (mode === 'weed' && gameState === 'playing') {
+      weedTimer = setInterval(() => setActiveWeed(Math.floor(Math.random() * 9)), 600);
+    }
+    return () => clearInterval(weedTimer);
+  }, [mode, gameState]);
+
+  const generateSpy = () => {
+    const pair = SPY_PAIRS[Math.floor(Math.random() * SPY_PAIRS.length)];
+    const answerIndex = Math.floor(Math.random() * 9);
+    const grid = Array(9).fill(pair[0]);
+    grid[answerIndex] = pair[1];
+    setSpyData({ grid, answer: answerIndex });
   };
 
-  // 타이머 및 잡초 생성 루프
-  useEffect(() => {
-    if (!isPlaying) return;
+  const generateSort = () => {
+    setSortItem(Math.random() > 0.5 ? '🦴' : '🐟');
+  };
 
-    // 1초마다 시간 감소
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsPlaying(false);
-          // 게임 종료 시 점수만큼 포인트 지급 (1점 = 10 P)
-          const earned = score * 10;
-          if (earned > 0) earnPoints(earned);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const startGame = (selectedMode: GameMode) => {
+    setMode(selectedMode);
+    setScore(0);
+    setGameState('playing');
+    
+    if (selectedMode === 'apple') setTimeLeft(10);
+    else if (selectedMode === 'weed') { setTimeLeft(15); setActiveWeed(null); }
+    else if (selectedMode === 'spy') { setTimeLeft(15); generateSpy(); }
+    else if (selectedMode === 'sort') { setTimeLeft(15); generateSort(); }
+  };
 
-    // 0.6초마다 새로운 잡초 생성
-    const spawner = setInterval(() => {
-      const newWeed: Weed = {
-        id: Date.now(),
-        x: Math.floor(Math.random() * 80) + 10, // 10% ~ 90% 위치
-        y: Math.floor(Math.random() * 70) + 10, // 10% ~ 80% 위치
-      };
-      setWeeds((prev) => [...prev, newWeed]);
-    }, 600);
+  const handleAppleClick = () => {
+    if (gameState === 'playing') setScore((prev) => prev + 1);
+  };
 
-    return () => {
-      clearInterval(timer);
-      clearInterval(spawner);
-    };
-  }, [isPlaying, score, earnPoints]);
+  const handleWeedClick = (index: number) => {
+    if (gameState === 'playing' && activeWeed === index) {
+      setScore((prev) => prev + 1);
+      setActiveWeed(null);
+    }
+  };
 
-  // 잡초 클릭 시 점수 획득 및 잡초 제거
-  const handleCatchWeed = (id: number) => {
-    if (!isPlaying) return;
-    setScore((prev) => prev + 1);
-    setWeeds((prev) => prev.filter((weed) => weed.id !== id));
+  const handleSpyClick = (index: number) => {
+    if (gameState !== 'playing') return;
+    if (index === spyData.answer) {
+      setScore((prev) => prev + 1);
+      generateSpy();
+    } else {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleSortClick = (type: '🦴' | '🐟') => {
+    if (gameState !== 'playing') return;
+    if (type === sortItem) {
+      setScore((prev) => prev + 1);
+    } else {
+      setScore((prev) => Math.max(0, prev - 1));
+    }
+    generateSort();
   };
 
   return (
     <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-amber-100 w-full max-w-2xl h-96 rounded-[2rem] border-8 border-amber-800 shadow-2xl relative overflow-hidden flex flex-col cursor-crosshair">
+      <div className="bg-green-50 w-full max-w-2xl rounded-4xl border-8 border-green-800 shadow-[10px_10px_0_rgba(0,0,0,0.5)] p-6 relative flex flex-col items-center text-center">
         
-        {/* 상단 UI */}
-        <div className="bg-amber-800 text-white p-4 flex justify-between items-center z-10 border-b-4 border-amber-900">
-          <span className="text-xl font-bold">🌱 잡초 뽑기 알바</span>
-          <div className="flex gap-6 text-xl font-bold">
-            <span className={timeLeft <= 3 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}>
-              ⏳ {timeLeft}초
-            </span>
-            <span className="text-green-300">🎯 {score}점</span>
+        <button onClick={onClose} className="absolute -top-4 -right-4 bg-red-500 text-white w-12 h-12 rounded-full border-4 border-red-900 font-extrabold text-2xl shadow-[0_4px_0_#7f1d1d] hover:translate-y-0.5 active:translate-y-1 z-10">X</button>
+
+        {mode === 'select' && (
+          <>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-green-900 mb-6 border-b-4 border-green-200 pb-4 w-full">👨‍🌾 알바 게시판</h2>
+            <div className="grid grid-cols-2 gap-3 md:gap-4 w-full mb-2">
+              
+              <div className="bg-white p-4 rounded-2xl border-4 border-gray-300 flex flex-col items-center shadow-sm">
+                <span className="text-4xl md:text-5xl mb-2">🍎</span>
+                <span className="font-extrabold text-lg md:text-xl text-gray-800 mb-1">사과 수확</span>
+                <span className="text-xs md:text-sm font-bold text-gray-500 mb-3 h-10">10초간 무한 터치!<br/>(1개당 10 P)</span>
+                <button onClick={() => startGame('apple')} className="w-full bg-green-500 text-white py-2 rounded-xl font-extrabold border-b-4 border-green-800 active:border-b-0 active:translate-y-1">시작하기</button>
+              </div>
+              
+              <div className="bg-white p-4 rounded-2xl border-4 border-gray-300 flex flex-col items-center shadow-sm">
+                <span className="text-4xl md:text-5xl mb-2">🌿</span>
+                <span className="font-extrabold text-lg md:text-xl text-gray-800 mb-1">잡초 뽑기</span>
+                <span className="text-xs md:text-sm font-bold text-gray-500 mb-3 h-10">15초간 순발력 테스트!<br/>(1개당 20 P)</span>
+                <button onClick={() => startGame('weed')} className="w-full bg-orange-500 text-white py-2 rounded-xl font-extrabold border-b-4 border-orange-800 active:border-b-0 active:translate-y-1">시작하기</button>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border-4 border-gray-300 flex flex-col items-center shadow-sm">
+                <span className="text-4xl md:text-5xl mb-2">🐏</span>
+                <span className="font-extrabold text-lg md:text-xl text-gray-800 mb-1">숨은 동물 찾기</span>
+                <span className="text-xs md:text-sm font-bold text-gray-500 mb-3 h-10">다른 모양을 찾으세요!<br/>(1개당 30 P)</span>
+                <button onClick={() => startGame('spy')} className="w-full bg-blue-500 text-white py-2 rounded-xl font-extrabold border-b-4 border-blue-800 active:border-b-0 active:translate-y-1">시작하기</button>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border-4 border-gray-300 flex flex-col items-center shadow-sm">
+                <span className="text-4xl md:text-5xl mb-2">🦴</span>
+                <span className="font-extrabold text-lg md:text-xl text-gray-800 mb-1">사료 분류</span>
+                <span className="text-xs md:text-sm font-bold text-gray-500 mb-3 h-10">좌우 버튼으로 분류!<br/>(1개당 5 P)</span>
+                <button onClick={() => startGame('sort')} className="w-full bg-purple-500 text-white py-2 rounded-xl font-extrabold border-b-4 border-purple-800 active:border-b-0 active:translate-y-1">시작하기</button>
+              </div>
+
+            </div>
+          </>
+        )}
+
+        {gameState === 'playing' && (
+          <div className="w-full flex flex-col items-center">
+            <div className="flex justify-between w-full mb-6 max-w-sm">
+              <div className="bg-white px-4 py-2 rounded-xl border-4 border-gray-800"><span className="text-xl font-bold">⏱ {timeLeft}초</span></div>
+              <div className="bg-white px-4 py-2 rounded-xl border-4 border-gray-800"><span className="text-xl font-bold">🎯 {score}점</span></div>
+            </div>
+            
+            {mode === 'apple' && (
+              <button onClick={handleAppleClick} className="text-[8rem] select-none active:scale-90 transition-transform drop-shadow-xl my-4">🍎</button>
+            )}
+
+            {mode === 'weed' && (
+              <div className="grid grid-cols-3 gap-3 bg-amber-700 p-4 rounded-2xl border-4 border-amber-900 my-2">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <button key={i} onClick={() => handleWeedClick(i)} className="w-20 h-20 bg-amber-800 rounded-xl border-b-4 border-amber-950 flex items-center justify-center text-5xl overflow-hidden active:border-b-0 active:translate-y-1">
+                    {activeWeed === i && <span className="animate-bounce">🌿</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {mode === 'spy' && (
+              <div className="grid grid-cols-3 gap-3 bg-blue-100 p-4 rounded-2xl border-4 border-blue-300 my-2">
+                {spyData.grid.map((emoji, i) => (
+                  <button key={i} onClick={() => handleSpyClick(i)} className="w-20 h-20 bg-white rounded-xl border-b-4 border-blue-200 flex items-center justify-center text-5xl active:border-b-0 active:translate-y-1 shadow-sm">
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {mode === 'sort' && (
+              <div className="flex flex-col items-center w-full max-w-sm my-4">
+                <div className="text-[6rem] mb-8 animate-bounce bg-white p-4 rounded-full border-4 border-gray-300 shadow-md">{sortItem}</div>
+                <div className="flex gap-4 w-full">
+                  <button onClick={() => handleSortClick('🦴')} className="flex-1 flex flex-col items-center bg-gray-100 py-4 rounded-2xl border-b-8 border-gray-300 active:border-b-0 active:translate-y-2 transition-all">
+                    <span className="text-5xl mb-2">🐶</span><span className="font-bold text-gray-600">뼈다귀</span>
+                  </button>
+                  <button onClick={() => handleSortClick('🐟')} className="flex-1 flex flex-col items-center bg-gray-100 py-4 rounded-2xl border-b-8 border-gray-300 active:border-b-0 active:translate-y-2 transition-all">
+                    <span className="text-5xl mb-2">🐱</span><span className="font-bold text-gray-600">물고기</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <button onClick={onClose} className="bg-red-500 hover:bg-red-400 px-3 py-1 rounded-xl border-2 border-red-900">
-            종료
-          </button>
-        </div>
+        )}
 
-        {/* 게임 영역 (잡초가 나타나는 밭) */}
-        <div className="flex-1 relative bg-green-500/20">
-          {!isPlaying && timeLeft === 10 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-20">
-              <p className="text-2xl font-bold text-white mb-4 drop-shadow-md">밭에 난 잡초를 빠르게 클릭하세요!</p>
-              <button 
-                onClick={startGame}
-                className="bg-yellow-400 text-yellow-900 text-2xl font-bold px-8 py-4 rounded-2xl border-4 border-yellow-700 hover:scale-105 active:scale-95 transition-transform"
-              >
-                알바 시작하기
-              </button>
+        {gameState === 'result' && (
+          <div className="w-full flex flex-col items-center max-w-sm">
+            <h2 className="text-4xl font-extrabold text-green-900 mb-2">알바 완료!</h2>
+            <p className="text-gray-600 font-bold mb-6">농장에 큰 도움이 되었습니다.</p>
+            
+            <div className="bg-white w-full py-6 rounded-2xl border-4 border-green-200 mb-4">
+              <p className="text-lg text-gray-600 font-bold mb-2">최종 점수: {score}점</p>
+              <p className="text-3xl font-extrabold text-yellow-500">
+                💰 +{score * (mode === 'weed' ? 20 : mode === 'spy' ? 30 : mode === 'apple' ? 10 : 5)} P
+              </p>
             </div>
-          )}
 
-          {!isPlaying && timeLeft === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-20">
-              <p className="text-4xl font-bold text-white mb-2">알바 끝!</p>
-              <p className="text-2xl font-bold text-yellow-300 mb-6 drop-shadow-md">수당: {score * 10} P 획득!</p>
-              <button 
-                onClick={startGame}
-                className="bg-blue-400 text-white text-xl font-bold px-6 py-3 rounded-2xl border-4 border-blue-800 hover:scale-105 active:scale-95 transition-transform"
-              >
-                다시 하기
-              </button>
+            {/* 👇 페널티 안내 문구 */}
+            <div className="bg-red-50 w-full py-3 rounded-xl border-2 border-red-200 mb-6">
+              <p className="text-sm font-bold text-red-600">💦 알바하느라 동물이 지쳤어요 (포만감 -10, 행복도 -10)</p>
             </div>
-          )}
+            
+            <div className="flex gap-4 w-full">
+              <button onClick={() => { setMode('select'); setGameState('ready'); }} className="flex-1 bg-gray-500 text-white text-lg font-extrabold py-3 rounded-xl border-b-4 border-gray-800 active:border-b-0 active:translate-y-1">다른 알바</button>
+              <button onClick={onClose} className="flex-2 bg-blue-500 text-white text-lg font-extrabold py-3 rounded-xl border-b-4 border-blue-800 active:border-b-0 active:translate-y-1">농장으로 돌아가기</button>
+            </div>
+          </div>
+        )}
 
-          {/* 잡초 렌더링 */}
-          {weeds.map((weed) => (
-            <div
-              key={weed.id}
-              onClick={() => handleCatchWeed(weed.id)}
-              className="absolute text-5xl hover:scale-125 transition-transform drop-shadow-lg animate-bounce"
-              style={{ left: `${weed.x}%`, top: `${weed.y}%` }}
-            >
-              🌱
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
