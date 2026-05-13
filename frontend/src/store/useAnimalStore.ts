@@ -9,8 +9,7 @@ export interface Animal {
   species: Species;
   hunger: number;
   happiness: number;
-  level: number;
-  exp: number;
+  affection: number; // 👈 레벨/EXP 대신 호감도 사용
   lastUpdated: number;
   isSick: boolean;
 }
@@ -22,9 +21,10 @@ interface AnimalState {
   adoptAnimal: (name: string, species: Species) => void;
   updateStats: (hungerDelta: number, happinessDelta: number) => void;
   decreaseStats: () => void;
-  addExp: (amount: number) => void;
+  updateAffection: (amount: number) => void; // 👈 호감도 증가 함수
   decayOfflineStats: () => void;
   cureDisease: () => void;
+  graduateAnimal: (id: string) => void;
 }
 
 export const useAnimalStore = create<AnimalState>()(
@@ -40,17 +40,16 @@ export const useAnimalStore = create<AnimalState>()(
           id: Date.now().toString(),
           name, species,
           hunger: 100, happiness: 100,
-          level: 1, exp: 0,
+          affection: 0, // 초기 호감도 0%
           lastUpdated: Date.now(),
           isSick: false,
         };
         return {
           animals: [...state.animals, newAnimal],
-          activeAnimalId: newAnimal.id, // 입양 시 해당 동물을 바로 활성화
+          activeAnimalId: newAnimal.id,
         };
       }),
 
-      // 현재 활성화된 동물에게만 적용
       updateStats: (hungerDelta, happinessDelta) => set((state) => ({
         animals: state.animals.map((animal) => {
           if (animal.id !== state.activeAnimalId) return animal;
@@ -66,7 +65,6 @@ export const useAnimalStore = create<AnimalState>()(
         })
       })),
 
-      // 보유한 모든 동물에게 적용 (배고픔 감소)
       decreaseStats: () => set((state) => ({
         animals: state.animals.map((animal) => {
           const hungerDrop = animal.isSick ? 4 : 2;
@@ -83,33 +81,24 @@ export const useAnimalStore = create<AnimalState>()(
         })
       })),
 
-      // 현재 활성화된 동물에게만 적용
-      addExp: (amount) => set((state) => ({
+      // 👇 호감도 업데이트 (최대 100)
+      updateAffection: (amount) => set((state) => ({
         animals: state.animals.map((animal) => {
           if (animal.id !== state.activeAnimalId) return animal;
-          let newExp = (animal.exp || 0) + amount;
-          let newLevel = animal.level || 1;
-          while (newExp >= newLevel * 100) {
-            newExp -= newLevel * 100;
-            newLevel += 1;
-          }
-          return { ...animal, level: newLevel, exp: newExp, lastUpdated: Date.now() };
+          return { ...animal, affection: Math.min(100, (animal.affection || 0) + amount), lastUpdated: Date.now() };
         })
       })),
 
-      // 보유한 모든 동물에게 적용 (오프라인 수치 저하)
       decayOfflineStats: () => set((state) => {
         const now = Date.now();
         return {
           animals: state.animals.map((animal) => {
             const minutesPassed = Math.floor((now - animal.lastUpdated) / 60000);
             if (minutesPassed <= 0) return animal;
-
             const hungerDrop = animal.isSick ? minutesPassed * 4 : minutesPassed * 2;
             const happinessDrop = animal.isSick ? minutesPassed * 2 : minutesPassed * 1;
             const newHunger = Math.max(0, animal.hunger - hungerDrop);
             const newHappiness = Math.max(0, animal.happiness - happinessDrop);
-
             return {
               ...animal,
               hunger: newHunger,
@@ -121,14 +110,19 @@ export const useAnimalStore = create<AnimalState>()(
         };
       }),
 
-      // 현재 활성화된 동물 치료
       cureDisease: () => set((state) => ({
         animals: state.animals.map((animal) =>
-          animal.id === state.activeAnimalId
-            ? { ...animal, isSick: false, lastUpdated: Date.now() }
-            : animal
+          animal.id === state.activeAnimalId ? { ...animal, isSick: false, lastUpdated: Date.now() } : animal
         )
       })),
+
+      graduateAnimal: (id) => set((state) => {
+        const remaining = state.animals.filter(a => a.id !== id);
+        return {
+          animals: remaining,
+          activeAnimalId: state.activeAnimalId === id ? (remaining[0]?.id || null) : state.activeAnimalId
+        };
+      }),
     }),
     { name: 'animal-storage' }
   )

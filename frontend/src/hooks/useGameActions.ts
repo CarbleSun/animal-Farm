@@ -3,18 +3,18 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useAnimalStore } from '../store/useAnimalStore';
 
 export interface ActionFeedback {
-  type: 'feed' | 'play' | 'cure';
-  stats: { hunger?: number; happiness?: number; exp: number; };
+  type: 'feed' | 'play';
+  stats: { hunger?: number; happiness?: number; affection?: number; };
 }
 
 export const useGameActions = () => {
   const spendPoints = useUserStore((state) => state.spendPoints);
   const inventory = useInventoryStore(); 
-  const { updateStats, addExp, animals, activeAnimalId, cureDisease } = useAnimalStore();
+  const { updateStats, updateAffection, animals, activeAnimalId } = useAnimalStore();
 
   const activeAnimal = animals.find((a) => a.id === activeAnimalId);
 
-  const buyItem = (type: 'food' | 'toy' | 'medicine', price: number, amount: number) => {
+  const buyItem = (type: 'food' | 'toy', price: number, amount: number) => {
     if (spendPoints(price)) {
       inventory.addItem(type, amount);
       return true;
@@ -25,9 +25,9 @@ export const useGameActions = () => {
   const feedAnimal = (): ActionFeedback | null => {
     if (!activeAnimal || inventory.food <= 0) return null;
     if (inventory.useItem('food')) {
-      const stats = { hunger: 30, happiness: 0, exp: 20 };
+      const stats = { hunger: 30, happiness: 0, affection: 3 }; 
       updateStats(stats.hunger, stats.happiness); 
-      addExp(stats.exp);
+      updateAffection(stats.affection);
       return { type: 'feed', stats };
     }
     return null;
@@ -36,22 +36,13 @@ export const useGameActions = () => {
   const playWithAnimal = (): ActionFeedback | null => {
     if (!activeAnimal || inventory.toy <= 0 || activeAnimal.isSick) return null; 
     if (inventory.useItem('toy')) {
-      const stats = { hunger: -5, happiness: 30, exp: 30 };
+      const stats = { hunger: -5, happiness: 30, affection: 5 }; 
       updateStats(stats.hunger, stats.happiness);
-      addExp(stats.exp);
+      updateAffection(stats.affection);
       return { type: 'play', stats };
     }
     return null;
   };
 
-  const cureAnimal = (): ActionFeedback | null => {
-    if (!activeAnimal?.isSick || inventory.medicine <= 0) return null;
-    if (inventory.useItem('medicine')) {
-      cureDisease();
-      return { type: 'cure', stats: { exp: 50 } };
-    }
-    return null;
-  };
-
-  return { buyItem, feedAnimal, playWithAnimal, cureAnimal };
+  return { buyItem, feedAnimal, playWithAnimal };
 };
