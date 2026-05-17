@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAnimalStore, type Species } from '../store/useAnimalStore';
 
-// 👇 Props 인터페이스 정의: onFinish를 선택적(optional)으로 추가
+// Props 인터페이스 정의: onFinish를 선택적(optional)으로 추가
 interface AdoptAnimalProps {
   onFinish?: () => void;
 }
@@ -18,7 +18,7 @@ const AdoptAnimal = ({ onFinish }: AdoptAnimalProps) => {
     }
     adoptAnimal(name, species);
     
-    // 👇 입양이 완료되면 부모 컴포넌트(FarmMain)에게 알림
+    // 입양이 완료되면 부모 컴포넌트(FarmMain)에게 알림
     if (onFinish) {
       onFinish();
     }

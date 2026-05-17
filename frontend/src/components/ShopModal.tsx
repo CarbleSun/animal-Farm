@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useUserStore, type ThemeType } from '../store/useUserStore';
+import { useAlertStore } from '../store/useAlertStore';
 
 interface ShopModalProps { onClose: () => void; }
 
@@ -13,20 +14,21 @@ const THEMES: { id: ThemeType; name: string; price: number; icon: string; desc: 
 const ShopModal = ({ onClose }: ShopModalProps) => {
   const { points, spendPoints, currentTheme, ownedThemes, buyTheme, setTheme } = useUserStore();
   const addItem = useInventoryStore((state) => state.addItem);
+  const showAlert = useAlertStore((state) => state.showAlert); // 👈 알림 함수 임포트
   const [tab, setTab] = useState<'item' | 'deco'>('item');
 
   const handleBuyItem = (type: 'food' | 'toy', price: number, amount: number) => {
     if (spendPoints(price)) {
       addItem(type, amount);
-      alert('구매 완료!');
+      showAlert('구매가 완료되었습니다!');
     } else {
-      alert('포인트가 부족합니다.');
+      showAlert('포인트가 부족합니다.');
     }
   };
 
   const handleBuyTheme = (theme: ThemeType, price: number) => {
-    if (buyTheme(theme, price)) alert('테마 구매 완료!');
-    else alert('포인트가 부족합니다.');
+    if (buyTheme(theme, price)) showAlert('테마 구매가 완료되었습니다!');
+    else showAlert('포인트가 부족합니다.');
   };
 
   return (

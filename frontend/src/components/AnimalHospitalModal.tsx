@@ -1,5 +1,6 @@
 import { useUserStore } from '../store/useUserStore';
 import { useAnimalStore } from '../store/useAnimalStore';
+import { useAlertStore } from '../store/useAlertStore';
 
 interface AnimalHospitalModalProps {
   onClose: () => void;
@@ -8,21 +9,22 @@ interface AnimalHospitalModalProps {
 const AnimalHospitalModal = ({ onClose }: AnimalHospitalModalProps) => {
   const { spendPoints, points } = useUserStore();
   const { animals, activeAnimalId, cureDisease } = useAnimalStore();
+  const showAlert = useAlertStore((state) => state.showAlert); // 알림 함수 임포트
   
   const myAnimal = animals.find(a => a.id === activeAnimalId);
 
   const handleCure = () => {
     if (!myAnimal?.isSick) {
-      alert('현재 아주 건강한 상태입니다!');
+      showAlert('현재 아주 건강한 상태입니다!');
       return;
     }
     
     if (spendPoints(500)) {
       cureDisease();
-      alert(`${myAnimal.name}의 병이 완치되었습니다! (호감도 +10)`);
+      showAlert(`${myAnimal.name}의 병이 완치되었습니다!\n(호감도 +10)`);
       onClose();
     } else {
-      alert('치료비(포인트)가 부족합니다.');
+      showAlert('치료비(포인트)가 부족합니다.');
     }
   };
 

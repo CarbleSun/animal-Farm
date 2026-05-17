@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useUserStore, getRankInfo } from '../store/useUserStore';
+import { useBankStore } from '../store/useBankStore';
 import { useAnimalStore } from '../store/useAnimalStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useGameActions, type ActionFeedback } from '../hooks/useGameActions';
+import { useAlertStore } from '../store/useAlertStore'; // 👈 알림 스토어 임포트
 import AdoptAnimal from './AdoptAnimal';
 import ShopModal from './ShopModal';
 import MiniGameModal from './MiniGameModal';
 import AnimalListModal from './AnimalListModal';
 import UserProfileModal from './UserProfileModal';
-import AnimalHospitalModal from './AnimalHospitalModal'; // 👈 병원 모달 추가
+import AnimalHospitalModal from './AnimalHospitalModal';
+import BankModal from './BankModal';
+import GlobalAlert from './GlobalAlert'; // 👈 글로벌 알림 컴포넌트 임포트
 
 interface FeedbackText { id: number; text: string; x: number; y: number; color: string; }
 
@@ -21,10 +25,11 @@ const THEME_STYLES = {
 
 const FarmMain = () => {
   const { farmName, userName, points, currentTheme, graduatedCount, addGraduatedCount } = useUserStore();
+  const applyDailyInterest = useBankStore((state) => state.applyDailyInterest);
   const { animals, activeAnimalId, decreaseStats, decayOfflineStats, graduateAnimal } = useAnimalStore();
   const inventory = useInventoryStore();
-  // 👇 baseCure 제거됨
   const { feedAnimal: baseFeed, playWithAnimal: basePlay } = useGameActions();
+  const { showAlert, showConfirm } = useAlertStore(); // 👈 알림창 함수 가져오기
   
   const myAnimal = animals.find(a => a.id === activeAnimalId);
   const curTheme = THEME_STYLES[currentTheme || 'default'];
@@ -33,19 +38,28 @@ const FarmMain = () => {
   const [isGameOpen, setIsGameOpen] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isHospitalOpen, setIsHospitalOpen] = useState(false); // 👈 병원 모달 상태 추가
+  const [isHospitalOpen, setIsHospitalOpen] = useState(false);
+  const [isBankOpen, setIsBankOpen] = useState(false); 
   const [isAdoptMode, setIsAdoptMode] = useState(false);
 
   const [feedbackTexts, setFeedbackTexts] = useState<FeedbackText[]>([]);
   const { title: rankTitle } = getRankInfo(graduatedCount);
 
+  useEffect(() => {
+    applyDailyInterest();
+  }, [applyDailyInterest]);
+
+  // 👇 기본 confirm 대신 showConfirm 사용
   const handleGraduation = () => {
     if (!myAnimal) return;
-    if (confirm(`${myAnimal.name}이(가) 호감도가 가득 차 독립할 준비가 되었습니다!\n엔딩을 보시겠습니까? (되돌릴 수 없습니다)`)) {
-      addGraduatedCount();
-      graduateAnimal(myAnimal.id);
-      alert('동물이 훌륭하게 자라 농장을 떠났습니다. 계급 점수가 올랐습니다!');
-    }
+    showConfirm(
+      `${myAnimal.name}이(가) 호감도가 가득 차\n독립할 준비가 되었습니다!\n\n엔딩을 보시겠습니까?\n(되돌릴 수 없습니다)`,
+      () => {
+        addGraduatedCount();
+        graduateAnimal(myAnimal.id);
+        showAlert('동물이 훌륭하게 자라 농장을 떠났습니다.\n계급 점수가 올랐습니다!');
+      }
+    );
   };
 
   useEffect(() => {
@@ -93,7 +107,10 @@ const FarmMain = () => {
       {isGameOpen && <MiniGameModal onClose={() => setIsGameOpen(false)} />}
       {isListOpen && <AnimalListModal onClose={() => setIsListOpen(false)} onAdoptNew={() => { setIsListOpen(false); setIsAdoptMode(true); }} />}
       {isProfileOpen && <UserProfileModal onClose={() => setIsProfileOpen(false)} />}
-      {isHospitalOpen && <AnimalHospitalModal onClose={() => setIsHospitalOpen(false)} />} {/* 👈 병원 모달 렌더링 */}
+      {isHospitalOpen && <AnimalHospitalModal onClose={() => setIsHospitalOpen(false)} />}
+      {isBankOpen && <BankModal onClose={() => setIsBankOpen(false)} />}
+
+      <GlobalAlert /> {/* 모든 알림창을 처리할 최상위 모달 렌더링 */}
 
       {feedbackTexts.map((fb) => (
         <div key={fb.id} className={`fixed font-extrabold text-2xl animate-floating-text z-[9999] pointer-events-none drop-shadow-md ${fb.color}`} style={{ left: fb.x, top: fb.y }}>
@@ -127,14 +144,15 @@ const FarmMain = () => {
               </div>
               <h2 className="text-lg font-bold text-gray-800 truncate">{userName}의 {farmName}</h2>
             </button>
-            <button onClick={() => setIsListOpen(true)} className="bg-white px-4 py-2 rounded-xl border-4 border-gray-800 shadow-[4px_4px_0_rgba(0,0,0,0.2)] font-black hover:bg-gray-100 active:translate-y-[4px] active:shadow-none transition-all">
+            <button onClick={() => setIsListOpen(true)} className="bg-white px-4 py-2 rounded-xl border-4 border-gray-800 shadow-[4px_4px_0_rgba(0,0,0,0.2)] font-black hover:bg-gray-100 active:translate-y-[4px] active:shadow-none transition-all hidden md:block">
               🐾 동물들 ({animals.length})
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setIsGameOpen(true)} className="bg-green-500 px-4 py-2 rounded-xl border-4 border-green-800 shadow-[4px_4px_0_#166534] text-white font-extrabold hover:bg-green-400 active:translate-y-[4px] transition-all">👨‍🌾 알바</button>
             <button onClick={() => setIsShopOpen(true)} className="bg-blue-400 px-4 py-2 rounded-xl border-4 border-blue-800 shadow-[4px_4px_0_#1e3a8a] text-white font-extrabold hover:bg-blue-300 active:translate-y-[4px] transition-all">🏪 상점</button>
-            <div className="bg-yellow-300 px-4 py-2 rounded-xl border-4 border-yellow-700 shadow-[4px_4px_0_#854d0e] hidden md:block">
+            <button onClick={() => setIsBankOpen(true)} className="bg-orange-400 px-4 py-2 rounded-xl border-4 border-orange-800 shadow-[4px_4px_0_#9a3412] text-white font-extrabold hover:bg-orange-300 active:translate-y-[4px] transition-all">🏦 은행</button>
+            <div className="bg-yellow-300 px-4 py-2 rounded-xl border-4 border-yellow-700 shadow-[4px_4px_0_#854d0e] hidden lg:block">
               <span className="text-lg font-extrabold text-yellow-900">💰 {points.toLocaleString()} P</span>
             </div>
           </div>
@@ -153,10 +171,9 @@ const FarmMain = () => {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur p-5 md:p-6 rounded-3xl border-4 border-gray-800 shadow-[0_10px_0_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-stretch w-full gap-0 relative overflow-hidden">
+        <div className="bg-white/95 backdrop-blur p-5 md:p-6 rounded-3xl border-4 border-gray-800 shadow-[0_10px_0_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-center w-full gap-6 relative overflow-hidden">
           {myAnimal.isSick && <div className="absolute top-0 left-0 w-full h-2 bg-red-500 animate-pulse"></div>}
 
-          {/* 왼쪽 프로필 영역 */}
           <div className="w-full md:w-1/5 flex flex-col justify-between border-b-4 md:border-b-0 md:border-r-4 border-gray-200 pb-4 md:pb-0 md:pr-4">
             <div className="flex flex-col gap-2 mb-4 md:mb-0">
               <span className={`text-xl lg:text-2xl font-extrabold truncate ${myAnimal.isSick ? 'text-red-600' : 'text-gray-800'}`}>{myAnimal.name}</span>
@@ -175,7 +192,6 @@ const FarmMain = () => {
             </div>
           </div>
 
-          {/* 중간 상태창 영역 */}
           <div className="w-full md:w-2/5 flex flex-col justify-center space-y-4 border-b-4 md:border-b-0 md:border-r-4 border-gray-200 py-4 md:py-0 md:px-6">
             <div>
               <div className="flex justify-between text-base font-bold mb-1.5 text-gray-800"><span>🍖 포만감</span><span className={myAnimal.hunger < 30 ? 'text-red-500' : ''}>{myAnimal.hunger} / 100</span></div>
@@ -187,7 +203,6 @@ const FarmMain = () => {
             </div>
           </div>
 
-          {/* 오른쪽 조작 영역 */}
           <div className="w-full md:w-2/5 flex gap-2 lg:gap-4 justify-center md:justify-end items-center pt-4 md:pt-0 md:pl-6">
             <button onClick={(e) => handleActionWithFeedback(baseFeed, e)} disabled={myAnimal.hunger >= 100 || inventory.food <= 0} className="relative group flex flex-col items-center justify-center bg-orange-400 hover:bg-orange-300 text-white w-16 h-16 lg:w-24 lg:h-24 rounded-2xl shadow-[0_6px_0_#9a3412] border-4 border-orange-900 active:translate-y-[6px] active:shadow-none transition-all disabled:opacity-50">
               <span className="absolute -top-3 -right-3 bg-red-500 text-white font-bold px-2 py-0.5 rounded-full border-2 border-white text-xs">{inventory.food}</span>
@@ -197,8 +212,6 @@ const FarmMain = () => {
               <span className="absolute -top-3 -right-3 bg-red-500 text-white font-bold px-2 py-0.5 rounded-full border-2 border-white text-xs">{inventory.toy}</span>
               <span className="text-xl lg:text-3xl mb-1 group-active:scale-90">🎾</span><span className="text-xs lg:text-lg font-extrabold text-pink-900">놀아주기</span>
             </button>
-            
-            {/* 👇 치료 버튼이 약 소모 대신 병원 모달을 띄우도록 변경 + 호감도 밸런스 수정 및 버튼 호버/액티브 이펙트 추가 */}
             <button 
               onClick={() => setIsHospitalOpen(true)} 
               className={`relative group flex flex-col items-center justify-center w-16 h-16 lg:w-24 lg:h-24 rounded-2xl transition-all border-4 ${myAnimal.isSick 
