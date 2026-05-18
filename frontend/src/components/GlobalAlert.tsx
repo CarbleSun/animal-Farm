@@ -29,8 +29,8 @@ const GlobalAlert = () => {
         }
       `}</style>
       
-      <div className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-white w-full max-w-sm rounded-[2rem] border-8 border-sky-400 shadow-[8px_8px_0_rgba(0,0,0,0.5)] p-6 relative flex flex-col items-center text-center animate-pop-in">
+      <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white w-full max-w-sm rounded-4xl border-8 border-sky-400 shadow-[8px_8px_0_rgba(0,0,0,0.5)] p-6 relative flex flex-col items-center text-center animate-pop-in">
           <h2 className="text-2xl font-black text-sky-900 mb-4 border-b-4 border-sky-200 pb-2 w-full">
             {type === 'confirm' ? '선택해 주세요' : '알림'}
           </h2>

@@ -14,7 +14,7 @@ const CreateFarm = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-green-300 to-green-500 p-4 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-full bg-linear-to-br from-green-300 to-green-500 p-4 relative overflow-hidden">
       {/* 장식용 구름과 꽃 (화면이 작아져도 방해되지 않도록 위치와 크기 조정) */}
       <div className="absolute top-8 left-8 text-4xl opacity-70">☁️</div>
       <div className="absolute top-16 right-10 text-5xl opacity-60">☁️</div>
@@ -29,7 +29,7 @@ const CreateFarm = () => {
       </div>
       
       {/* 입력 폼 영역 (내부 여백과 폰트 크기 최적화) */}
-      <form onSubmit={handleSubmit} className="z-10 bg-orange-50 p-6 rounded-[2rem] border-[6px] border-orange-800 w-full max-w-sm shadow-[8px_8px_0_rgba(0,0,0,0.3)]">
+      <form onSubmit={handleSubmit} className="z-10 bg-orange-50 p-6 rounded-4xl border-[6px] border-orange-800 w-full max-w-sm shadow-[8px_8px_0_rgba(0,0,0,0.3)]">
         <div className="space-y-4">
           <div>
             <label className="block text-lg font-bold text-orange-900 mb-1 drop-shadow-sm">농장 이름</label>
@@ -55,7 +55,7 @@ const CreateFarm = () => {
 
           <button 
             type="submit"
-            className="w-full mt-2 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-extrabold py-3 rounded-xl text-xl shadow-[0_6px_0_#a16207] hover:translate-y-[2px] hover:shadow-[0_4px_0_#a16207] active:shadow-none active:translate-y-[6px] transition-all border-4 border-yellow-800"
+            className="w-full mt-2 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-extrabold py-3 rounded-xl text-xl shadow-[0_6px_0_#a16207] hover:translate-y-0.5 hover:shadow-[0_4px_0_#a16207] active:shadow-none active:translate-y-1.5 transition-all border-4 border-yellow-800"
           >
             게임 시작하기!
           </button>

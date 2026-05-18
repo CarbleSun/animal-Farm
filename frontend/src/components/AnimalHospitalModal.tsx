@@ -7,7 +7,7 @@ interface AnimalHospitalModalProps {
 }
 
 const AnimalHospitalModal = ({ onClose }: AnimalHospitalModalProps) => {
-  const { spendPoints, points } = useUserStore();
+  const { spendPoints } = useUserStore();
   const { animals, activeAnimalId, cureDisease } = useAnimalStore();
   const showAlert = useAlertStore((state) => state.showAlert); // 알림 함수 임포트
   
@@ -30,8 +30,8 @@ const AnimalHospitalModal = ({ onClose }: AnimalHospitalModalProps) => {
 
   return (
     <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-red-50 w-full max-w-sm rounded-[2rem] border-8 border-red-800 shadow-[8px_8px_0_rgba(0,0,0,0.5)] p-6 relative flex flex-col items-center">
-        <button onClick={onClose} className="absolute -top-4 -right-4 bg-gray-500 text-white w-11 h-11 rounded-full border-4 border-gray-900 font-extrabold text-xl shadow-[0_4px_0_#374151] hover:translate-y-[2px] active:translate-y-[4px]">X</button>
+      <div className="bg-red-50 w-full max-w-sm rounded-4xl border-8 border-red-800 shadow-[8px_8px_0_rgba(0,0,0,0.5)] p-6 relative flex flex-col items-center">
+        <button onClick={onClose} className="absolute -top-4 -right-4 bg-gray-500 text-white w-11 h-11 rounded-full border-4 border-gray-900 font-extrabold text-xl shadow-[0_4px_0_#374151] hover:translate-y-0.5 active:translate-y-1">X</button>
         
         <h2 className="text-3xl font-extrabold text-red-900 mb-6 border-b-4 border-red-200 pb-3 w-full text-center">🏥 동물 병원</h2>
 
